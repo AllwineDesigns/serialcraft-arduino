@@ -13,6 +13,14 @@
 #define SERIAL_CRAFT_ANALOG_INPUTS 4
 #endif
 
+#ifndef SERIAL_CRAFT_REDSTONE_INPUTS
+#define SERIAL_CRAFT_REDSTONE_INPUTS 4
+#endif
+
+#ifndef SERIAL_CRAFT_HOTBAR_INPUTS
+#define SERIAL_CRAFT_HOTBAR_INPUTS 4
+#endif
+
 #include <Arduino.h>
 
 class SCTimer {
@@ -130,17 +138,22 @@ class SCAnalogInput {
         }
 };
 
-class SCAnalogRedstoneInput {
+class SCRedstoneInput {
     private:
         int state;
         int lastReading;
         unsigned long int lastReadingTime;
 
-        const int pin;
-        const int debounce_time;
+        int pin;
+        int debounce_time;
+
+        void (*callback)(int);
 
     public:
-        SCAnalogRedstoneInput(int p, unsigned int d=5) : pin(p), debounce_time(d) {
+        SCRedstoneInput() {
+        }
+
+        SCRedstoneInput(void (*func)(int), int p, unsigned int d=5) : callback(func), pin(p), debounce_time(d) {
             state = 0;
         }
 
@@ -161,8 +174,49 @@ class SCAnalogRedstoneInput {
             return false;
         }
 
-        int getState() {
-            return state;
+        void callCallback() {
+            callback(state);
+        }
+};
+
+class SCHotbarInput {
+    private:
+        int state;
+        int lastReading;
+        unsigned long int lastReadingTime;
+
+        int pin;
+        int debounce_time;
+
+        void (*callback)(int);
+
+    public:
+        SCHotbarInput() {
+        }
+
+        SCHotbarInput(void (*func)(int), int p, unsigned int d=5) : callback(func), pin(p), debounce_time(d) {
+            state = 0;
+        }
+
+        bool didStateChange() {
+            int reading = map(analogRead(pin), 0, 1023, 1, 9);
+            if(reading != lastReading) {
+                lastReading = reading;
+                lastReadingTime = millis();
+            }
+
+            if(millis()-lastReadingTime > debounce_time) {
+                if(lastReading != state) {
+                    state = lastReading;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        void callCallback() {
+            callback(state);
         }
 };
 
@@ -202,6 +256,13 @@ class SerialCraft {
         SCAnalogInput analogInputs[SERIAL_CRAFT_ANALOG_INPUTS];
         int numAnalogInputs;
 
+        SCRedstoneInput redstoneInputs[SERIAL_CRAFT_REDSTONE_INPUTS];
+        int numRedstoneInputs;
+
+        SCHotbarInput hotbarInputs[SERIAL_CRAFT_HOTBAR_INPUTS];
+        int numHotbarInputs;
+
+        bool lastMouseMoveWasZero;
     public:
         SerialCraft(unsigned long int b = 115200) : baud(b), numTimers(0), numDigitalInputs(0), numAnalogInputs(0) {
         }
@@ -219,6 +280,16 @@ class SerialCraft {
         void registerAnalogInputCallback(void (*func)(int), int p, int s=5, int d=0) {
             analogInputs[numAnalogInputs] = SCAnalogInput(func,p,s,d);
             numAnalogInputs++;
+        }
+
+        void registerRedstoneInputCallback(void (*func)(int), int p, int d=5) {
+            redstoneInputs[numRedstoneInputs] = SCRedstoneInput(func,p,d);
+            numRedstoneInputs++;
+        }
+
+        void registerHotbarInputCallback(void (*func)(int), int p, int d=5) {
+            hotbarInputs[numHotbarInputs] = SCHotbarInput(func,p,d);
+            numHotbarInputs++;
         }
         
         void setup() {
@@ -243,6 +314,23 @@ class SerialCraft {
                     analogInputs[i].callCallback();
                 }
             }
+
+            for(int i = 0; i < numRedstoneInputs; i++) {
+                if(redstoneInputs[i].didStateChange()) {
+                    redstoneInputs[i].callCallback();
+                }
+            }
+
+            for(int i = 0; i < numHotbarInputs; i++) {
+                if(hotbarInputs[i].didStateChange()) {
+                    hotbarInputs[i].callCallback();
+                }
+            }
+        }
+
+        void setHotbarItem(int i) {
+            Serial.print("hotbar ");
+            Serial.println(i);
         }
 
         void sendRedstoneSignal(String id, unsigned int value) {
@@ -250,6 +338,26 @@ class SerialCraft {
             Serial.print(value);
             Serial.print(" ");
             Serial.println(id);
+        }
+
+        void moveMouse(int x, int y) {
+            if(x == 0 && y == 0) {
+                if(!lastMouseMoveWasZero) {
+                    Serial.println("m 0 0");
+                    lastMouseMoveWasZero = true;
+                }
+            } else {
+                lastMouseMoveWasZero = false;
+                Serial.print("m ");
+                Serial.print(x);
+                Serial.print(" ");
+                Serial.println(y);
+            }
+        }
+
+        void setTime(unsigned int value) {
+            Serial.print("time set ");
+            Serial.println(value);
         }
 };
 
