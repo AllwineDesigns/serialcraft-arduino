@@ -13,6 +13,10 @@ If you've purchased the kit for the Advanced Minecraft Controller classes at Chi
 Arduino you're using is called a Pololu A-Star Mini LV and it requires installing separate drivers for Windows. Follow [these
 instructions, provided by Pololu](https://www.pololu.com/docs/0J61/6.1).
 
+After the drivers have been installed, you should be able to select the Arduino Micro or Arduino Leonardo from the Board
+menu as they use the same chip (ATmega 32U4). You can also add a Pololu A-Star 32U4 entry to the Board menu by following
+the "Arduino add-on" section [here](https://github.com/pololu/a-star).
+
 ## Install the SerialCraft library
 
 Download the [SerialCraft Arduino library](https://github.com/CMBSTEAMlab/serialcraft-arduino/archive/master.zip). Install the
