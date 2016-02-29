@@ -359,6 +359,75 @@ class SerialCraft {
             Serial.print("time set ");
             Serial.println(value);
         }
+
+        void startMovingForward() {
+            Serial.println("move_forward forward");
+        }
+
+        void startMovingBackward() {
+            Serial.println("move_forward back");
+        }
+
+        void stopMovingForward() {
+            Serial.println("move_forward neutral");
+        }
+
+        void stopMovingBackward() {
+            stopMovingForward();
+        }
+
+        void startMovingLeft() {
+            Serial.println("move_strafe left");
+        }
+
+        void startMovingRight() {
+            Serial.println("move_strafe right");
+        }
+
+        void stopMovingLeft() {
+            Serial.println("move_strafe neutral");
+        }
+
+        void stopMovingRight() {
+            stopMovingLeft();
+        }
+
+        void sendChatMessage(const String &msg) {
+            Serial.print("chat ");
+            Serial.println(msg);
+        }
+
+        void pressLeftMouseButton() {
+            Serial.println("left_button_press");
+        }
+
+        void releaseLeftMouseButton() {
+            Serial.println("left_button_release");
+        }
+
+        void pressRightMouseButton() {
+            Serial.println("right_button_press");
+        }
+
+        void releaseRightMouseButton() {
+            Serial.println("right_button_release");
+        }
+
+        void startSneaking() {
+            Serial.println("move_down");
+        }
+
+        void stopSneaking() {
+            Serial.println("stop_move_down");
+        }
+
+        void startJumping() {
+            Serial.println("start_jumping");
+        }
+
+        void stopJumping() {
+            Serial.println("stop_jumping");
+        }
 };
 
 
