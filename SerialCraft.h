@@ -121,14 +121,14 @@ class SCAnalogInput {
 
         bool didStateChange() {
             int reading = analogRead(pin);
-            if(lastReading-reading > sensitivity || lastReading-reading < -sensitivity) {
+            if(lastReading-reading >= sensitivity || lastReading-reading <= -sensitivity) {
               lastReading = reading;
               lastReadingTime = millis();
             }
 
             
             unsigned long int m = millis();
-            if(m-lastReadingTime > debounce_time) {
+            if(m-lastReadingTime >= debounce_time) {
                 if(lastReading != state) {
                   state = lastReading;
                   return true;
