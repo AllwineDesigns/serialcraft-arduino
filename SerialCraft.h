@@ -220,28 +220,151 @@ class SCHotbarInput {
         }
 };
 
-/*
+enum SCSerialState {
+    SC_HEADER,
+    SC_MESSAGE
+};
+
+#ifndef SC_SERIAL_TIMEOUT
+#define SC_SERIAL_TIMEOUT 2000
+#endif
+
 class SCSerialInput {
   private:
-      void (*callback)(String);
+      SCSerialState state;
+      int messageLength;
+      unsigned long startedWaiting;
+
+      void (*redstone_callback)(int, String);
+      void (*player_health_callback)(int);
+      void (*player_air_callback)(int);
+      void (*player_food_level_callback)(int);
+      void (*creeper_callback)(int);
       
   public: 
-      SCSerialInput() {
-      }
-      SCSerialInput(void (*func)(String)) : 
-          callback(func) {
-      }
-
-      bool isReady() {
-        return millis()-lastUpdate > interval;
+      SCSerialInput() : state(SC_HEADER), 
+                        redstone_callback(0),
+                        player_health_callback(0),
+                        player_air_callback(0),
+                        player_food_level_callback(0),
+                        creeper_callback(0) {
       }
 
-      void callCallback() {
-        callback();
-        lastUpdate = millis();
+      void registerRedstoneSerialCallback(void (*func)(int,String)) {
+          redstone_callback = func;
+      }
+      void registerPlayerHealthCallback(void (*func)(int)) {
+          player_health_callback = func;
+      }
+      void registerPlayerAirCallback(void (*func)(int)) {
+          player_air_callback = func;
+      }
+      void registerPlayerFoodLevelCallback(void (*func)(int)) {
+          player_food_level_callback = func;
+      }
+
+      void registerCreeperDistanceCallback(void (*func)(int)) {
+          creeper_callback = func;
+      }
+
+      void loop() {
+          switch(state) {
+              case SC_HEADER: {
+                  if(Serial.available() >= 4 && Serial.read() == 1) {
+                      // 0x01 0x53 0x43 <1 byte message length>
+                      // 0x01  S    C   <1 byte message length>
+
+                      char s = Serial.read();
+                      char c = Serial.read();
+
+                      if(s == 'S' && c == 'C') {
+                          messageLength = Serial.read();
+                          startedWaiting = millis();
+                          state = SC_MESSAGE;
+                      }
+                  }
+                  break;
+              }
+              case SC_MESSAGE: {
+                  if(millis()-startedWaiting > SC_SERIAL_TIMEOUT) {
+                      state = SC_HEADER;
+                  } else {
+                      // this assumes that the message will never be longer
+                      // than the Serial buffer (which is usually 64)
+                      // If this ever becomes insufficient, we'd 
+                      // need to create our own buffer and read in
+                      // data as it comes rather than wait until the
+                      // full message is in the Serial buffer.
+                      if(Serial.available() >= messageLength) {
+                          char type = Serial.read();
+                          switch(type) {
+                              case 0: {// Redstone message
+                                  if(redstone_callback) {
+                                      // If we have a callback then parse
+                                      // our message and call it
+                                      int redstoneSignal = Serial.read();
+                                      char *buffer = (char*)malloc(messageLength-1);
+                                      Serial.readBytes(buffer, messageLength-2);
+                                      buffer[messageLength-2] = '\0';
+                                      String redstoneID(buffer);
+                                      free(buffer);
+
+                                      redstone_callback(redstoneSignal, redstoneID);
+                                  } else {
+                                      // otherwise, consume the data and ignore it
+                                      // to avoid unnecessary memory allocations
+                                      for(int i = 0; i < messageLength-1; i++) {
+                                          Serial.read();
+                                      }
+                                  }
+
+                                  break;
+                              }
+                              case 1: { // Health
+                                  int health = Serial.read();
+
+                                  if(player_health_callback) {
+                                      player_health_callback(health);
+                                  }
+                                  break;
+                              }
+                              case 2: { // Food level
+                                  int foodLevel = Serial.read();
+
+                                  if(player_food_level_callback) {
+                                      player_food_level_callback(foodLevel);
+                                  }
+                                  break;
+                              }
+                              case 3: { // Air
+                                  int air = (Serial.read() << 8) + Serial.read();
+
+                                  if(player_air_callback) {
+                                      player_air_callback(air);
+                                  }
+
+                                  break;
+                              }
+                              case 4: { // Creeper Distance
+                                  int creeperDist = Serial.read();
+
+                                  if(creeper_callback) {
+                                      creeper_callback(creeperDist);
+                                  }
+                                  break;
+                              }
+                              default:
+                                  // unknown type
+                                  break;
+                          }
+                          state = SC_HEADER;
+                      }
+                  }
+                  break;
+              }
+          }
       }
 };
-*/
 
 
 class SerialCraft {
@@ -262,9 +385,28 @@ class SerialCraft {
         SCHotbarInput hotbarInputs[SERIAL_CRAFT_HOTBAR_INPUTS];
         int numHotbarInputs;
 
+        SCSerialInput serialInput;
+
         bool lastMouseMoveWasZero;
     public:
         SerialCraft(unsigned long int b = 115200) : baud(b), numTimers(0), numDigitalInputs(0), numAnalogInputs(0) {
+        }
+
+        void registerRedstoneSerialCallback(void (*func)(int,String)) {
+            serialInput.registerRedstoneSerialCallback(func);
+        }
+
+        void registerPlayerHealthCallback(void (*func)(int)) {
+            serialInput.registerPlayerHealthCallback(func);
+        }
+        void registerPlayerAirCallback(void (*func)(int)) {
+            serialInput.registerPlayerAirCallback(func);
+        }
+        void registerPlayerFoodLevelCallback(void (*func)(int)) {
+            serialInput.registerPlayerFoodLevelCallback(func);
+        }
+        void registerCreeperDistanceCallback(void (*func)(int)) {
+            serialInput.registerCreeperDistanceCallback(func);
         }
 
         void registerTimerCallback(void (*func)(), unsigned long i) {
@@ -326,11 +468,17 @@ class SerialCraft {
                     hotbarInputs[i].callCallback();
                 }
             }
+
+            serialInput.loop();
         }
 
         void setHotbarItem(int i) {
             Serial.print("hotbar ");
             Serial.println(i);
+        }
+
+        void updatePlayerInfo() {
+            Serial.println("update_player_info");
         }
 
         void sendRedstoneSignal(String id, unsigned int value) {
