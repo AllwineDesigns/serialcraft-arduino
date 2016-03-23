@@ -38,7 +38,7 @@ and [Mac](https://www.youtube.com/watch?v=HnTJxLIP41c).
 
 ### Install SerialCraft Minecraft mod
 
-You can download the SerialCraft mod [here](https://s3-us-west-2.amazonaws.com/serialcraft/SerialCraft-1.7.10-0.1-dev.jar). You'll
+You can download the SerialCraft mod [here](https://s3-us-west-2.amazonaws.com/serialcraft/SerialCraft-1.7.10-0.2-dev.jar). You'll
 also need to download the [jssc library](https://s3-us-west-2.amazonaws.com/serialcraft/jssc-2.8.jar), which SerialCraft depends on.
 Place both jar files in the mods directory as explained [here](http://www.minecraftmods.com/how-to-install-mods-for-minecraft-forge/).
 
