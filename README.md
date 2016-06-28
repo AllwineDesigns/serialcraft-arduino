@@ -46,4 +46,4 @@ Once installed and you enter the game, you can press 'k' by default to list any 
 have your Arduino hooked up to your computer, it should be listed there. Close and reopen the menu to refresh the list. Click
 connect after inputting the baud rate that your device has been configured to transmit at to start accepting serial events.
 
-Stay tuned for more documentation on what serial commands you can send to (or receive from) the SerialCraft mod.
+Stay tuned for [more documentation](https://github.com/CMBSTEAMlab/serialcraft-arduino/tree/master/docs) on what serial commands you can send to (or receive from) the SerialCraft mod.
