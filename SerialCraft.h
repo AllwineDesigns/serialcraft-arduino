@@ -2,26 +2,49 @@
 #define SERIAL_CRAFT_INCLUDE
 
 #ifndef SERIAL_CRAFT_TIMERS
-#define SERIAL_CRAFT_TIMERS 4
+#define SERIAL_CRAFT_TIMERS 10
 #endif
 
 #ifndef SERIAL_CRAFT_DIGITAL_INPUTS
-#define SERIAL_CRAFT_DIGITAL_INPUTS 4
+#define SERIAL_CRAFT_DIGITAL_INPUTS 10
 #endif
 
 #ifndef SERIAL_CRAFT_ANALOG_INPUTS
-#define SERIAL_CRAFT_ANALOG_INPUTS 4
+#define SERIAL_CRAFT_ANALOG_INPUTS 10
 #endif
 
 #ifndef SERIAL_CRAFT_REDSTONE_INPUTS
-#define SERIAL_CRAFT_REDSTONE_INPUTS 4
+#define SERIAL_CRAFT_REDSTONE_INPUTS 10
 #endif
 
 #ifndef SERIAL_CRAFT_HOTBAR_INPUTS
-#define SERIAL_CRAFT_HOTBAR_INPUTS 4
+#define SERIAL_CRAFT_HOTBAR_INPUTS 10
 #endif
 
 #include <Arduino.h>
+
+// Movement variables
+enum SCMoveSpeed {
+      SC_M_NORMAL, SC_M_SNEAK, SC_M_SPRINT
+};
+enum SCStrafeDirection {
+      SC_S_NEUTRAL, SC_S_LEFT, SC_S_RIGHT
+};
+enum SCForwardDirection {
+      SC_F_NEUTRAL, SC_F_FORWARD, SC_F_BACK
+};
+
+#ifndef SC_SNEAK_THRESH
+#define SC_SNEAK_THRESH 50
+#endif
+
+#ifndef SC_NORMAL_THRESH
+#define SC_NORMAL_THRESH 250
+#endif
+
+#ifndef SC_SPRINT_THRESH
+#define SC_SPRINT_THRESH 480
+#endif
 
 class SCTimer {
   private:
@@ -388,8 +411,13 @@ class SerialCraft {
         SCSerialInput serialInput;
 
         bool lastMouseMoveWasZero;
+
+        SCMoveSpeed sneak_sprint;
+        SCStrafeDirection strafe;
+        SCForwardDirection forward;
     public:
-        SerialCraft(unsigned long int b = 115200) : baud(b), numTimers(0), numDigitalInputs(0), numAnalogInputs(0) {
+        SerialCraft(unsigned long int b = 115200) : baud(b), numTimers(0), numDigitalInputs(0), numAnalogInputs(0),
+              sneak_sprint(SC_M_NORMAL), strafe(SC_S_NEUTRAL), forward(SC_F_NEUTRAL) {
         }
 
         void registerRedstoneSerialCallback(void (*func)(int,String)) {
@@ -575,6 +603,87 @@ class SerialCraft {
 
         void stopJumping() {
             Serial.println("stop_jumping");
+        }
+
+        void analogMovement(int x, int y) {
+            SCMoveSpeed ss = SC_M_NORMAL;
+            SCStrafeDirection strf = SC_S_NEUTRAL;
+            SCForwardDirection fwd = SC_F_NEUTRAL;
+
+            int absx = abs(x);
+            int absy = abs(y);
+
+            if(x <= -SC_SNEAK_THRESH) {
+                strf = SC_S_LEFT;
+            } else if(x >= SC_SNEAK_THRESH) {
+                strf = SC_S_RIGHT;
+            }
+
+            if(y <= -SC_SNEAK_THRESH) {
+                fwd = SC_F_BACK;
+            } else if(y >= SC_SNEAK_THRESH) {
+                fwd = SC_F_FORWARD;
+            }
+
+            if(strf || fwd) {
+                if((absx >= SC_SNEAK_THRESH && absx < SC_NORMAL_THRESH) ||
+                    (absy >= SC_SNEAK_THRESH && absy < SC_NORMAL_THRESH)) {
+                    ss = SC_M_SNEAK;
+                }
+                if((absx >= SC_NORMAL_THRESH && absx < SC_SPRINT_THRESH) ||
+                    (absy >= SC_NORMAL_THRESH && absy < SC_SPRINT_THRESH)) {
+                    ss = SC_M_NORMAL;
+                }
+                if(absx >= SC_SPRINT_THRESH ||
+                    absy >= SC_SPRINT_THRESH) {
+                    ss = SC_M_NORMAL;
+                }
+            }
+
+            if(ss != sneak_sprint) {
+                switch(ss) {
+                    case SC_M_SNEAK:
+                        Serial.println("move_speed sneak");
+                        break;
+                    case SC_M_NORMAL:
+                        Serial.println("move_speed normal");
+                        break;
+                    case SC_M_SPRINT:
+                        Serial.println("move_speed sprint");
+                        break;
+                }
+                sneak_sprint = ss;
+            }
+
+            if(fwd != forward) {
+                switch(fwd) {
+                    case SC_F_NEUTRAL:
+                        Serial.println("move_forward neutral");
+                        break;
+                    case SC_F_FORWARD:
+                        Serial.println("move_forward forward");
+                        break;
+                    case SC_F_BACK:
+                        Serial.println("move_forward back");
+                        break;
+                }
+                forward = fwd;
+            }
+
+            if(strf != strafe) {
+                switch(strf) {
+                    case SC_S_NEUTRAL:
+                        Serial.println("move_strafe neutral");
+                        break;
+                    case SC_S_LEFT:
+                        Serial.println("move_strafe left");
+                        break;
+                    case SC_S_RIGHT:
+                        Serial.println("move_strafe right");
+                        break;
+                }
+                strafe = strf;
+            }
         }
 };
 
