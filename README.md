@@ -19,7 +19,7 @@ the "Arduino add-on" section [here](https://github.com/pololu/a-star).
 
 ## Install the SerialCraft library
 
-Download the [SerialCraft Arduino library](https://github.com/CMBSTEAMlab/serialcraft-arduino/archive/master.zip). Install the
+Download the [SerialCraft Arduino library](https://github.com/AllwineDesigns/serialcraft-arduino/archive/master.zip). Install the
 library by following the instructions under [Importing a zip library](https://www.arduino.cc/en/Guide/Libraries#toc4) on Arduino's site.
 
 ## Using SerialCraft Arduino library to interface with SerialCraft Minecraft mod
@@ -38,12 +38,12 @@ and [Mac](https://www.youtube.com/watch?v=HnTJxLIP41c).
 
 ### Install SerialCraft Minecraft mod
 
-You can download the SerialCraft mod [here](https://s3-us-west-2.amazonaws.com/serialcraft/SerialCraft-1.7.10-0.2-dev.jar). You'll
-also need to download the [jssc library](https://s3-us-west-2.amazonaws.com/serialcraft/jssc-2.8.jar), which SerialCraft depends on.
-Place both jar files in the mods directory as explained [here](http://www.minecraftmods.com/how-to-install-mods-for-minecraft-forge/).
+You can download the latest SerialCraft mod release [here](https://github.com/AllwineDesigns/SerialCraftMod/releases). You'll
+also need to download the jssc library (also from the release page), which SerialCraft depends on.
+Unzip both files and place the resulting jar files in the mods directory as explained [here](http://www.minecraftmods.com/how-to-install-mods-for-minecraft-forge/).
 
 Once installed and you enter the game, you can press 'k' by default to list any serial devices connected to your computer. If you
 have your Arduino hooked up to your computer, it should be listed there. Close and reopen the menu to refresh the list. Click
 connect after inputting the baud rate that your device has been configured to transmit at to start accepting serial events.
 
-Stay tuned for [more documentation](https://github.com/CMBSTEAMlab/serialcraft-arduino/tree/master/docs) on what serial commands you can send to (or receive from) the SerialCraft mod.
+Stay tuned for [more documentation](https://github.com/AllwineDesigns/serialcraft-arduino/tree/master/docs) on what serial commands you can send to (or receive from) the SerialCraft mod.
